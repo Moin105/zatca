@@ -7,6 +7,8 @@ import { DatabaseConfig } from './config/database.config';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { CreditNotesModule } from './modules/credit-notes/credit-notes.module';
+import { DebitNotesModule } from './modules/debit-notes/debit-notes.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 
@@ -22,6 +24,8 @@ import { AuthModule } from './modules/auth/auth.module';
     CompaniesModule,
     CustomersModule,
     InvoicesModule,
+    CreditNotesModule,
+    DebitNotesModule,
     AuditLogsModule,
     AuthModule,
   ],

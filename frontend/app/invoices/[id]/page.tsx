@@ -309,6 +309,27 @@ export default function InvoiceDetailPage() {
             </Link>
           </div>
         )}
+
+        {/* Issue Credit / Debit Note (only for issued invoices) */}
+        {isIssued && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Related documents</h3>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/credit-notes/new?invoiceId=${invoiceId}`}
+                className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 font-medium text-sm"
+              >
+                Issue Credit Note
+              </Link>
+              <Link
+                href={`/debit-notes/new?invoiceId=${invoiceId}`}
+                className="px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 font-medium text-sm"
+              >
+                Issue Debit Note
+              </Link>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

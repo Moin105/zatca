@@ -205,6 +205,42 @@ export default function DashboardPage() {
               Create, manage, and issue ZATCA Phase 1 compliant invoices
             </p>
           </Link>
+
+          <Link
+            href="/credit-notes"
+            className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-8 border border-gray-100 hover:border-blue-300"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-14 w-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                <span className="text-blue-600 group-hover:text-white font-bold">CN</span>
+              </div>
+              <svg className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Credit Notes</h3>
+            <p className="text-gray-600 text-sm">
+              Issue credit notes (UBL 381) linked to invoices
+            </p>
+          </Link>
+
+          <Link
+            href="/debit-notes"
+            className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-8 border border-gray-100 hover:border-green-300"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-14 w-14 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-600 transition-colors">
+                <span className="text-green-600 group-hover:text-white font-bold">DN</span>
+              </div>
+              <svg className="h-5 w-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Debit Notes</h3>
+            <p className="text-gray-600 text-sm">
+              Issue debit notes (UBL 383) linked to invoices
+            </p>
+          </Link>
         </div>
 
         {/* Features Section */}

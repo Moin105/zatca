@@ -131,7 +131,7 @@ export default function InvoicesPage() {
                     {new Date(invoice.issueDateTime).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {invoice.totalAmount.toFixed(2)} SAR
+                    {Number(invoice.totalAmount ?? 0).toFixed(2)} SAR
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

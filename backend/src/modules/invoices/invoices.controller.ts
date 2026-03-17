@@ -30,6 +30,21 @@ export class InvoicesController {
     return this.invoicesService.findAll();
   }
 
+  @Get('validate-hash-chain/:companyId')
+  validateHashChain(@Param('companyId') companyId: string) {
+    return this.invoicesService.validateHashChain(companyId);
+  }
+
+  @Get('zatca-sdk/available')
+  isZatcaSdkAvailable() {
+    return { available: this.invoicesService.isZatcaSdkAvailable() };
+  }
+
+  @Get(':id/validate-zatca')
+  validateWithZatcaSdk(@Param('id') id: string) {
+    return this.invoicesService.validateWithZatcaSdk(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.invoicesService.findOne(id);
@@ -50,8 +65,4 @@ export class InvoicesController {
     return this.invoicesService.remove(id);
   }
 
-  @Get('validate-hash-chain/:companyId')
-  validateHashChain(@Param('companyId') companyId: string) {
-    return this.invoicesService.validateHashChain(companyId);
-  }
 }

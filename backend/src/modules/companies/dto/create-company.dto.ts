@@ -13,6 +13,22 @@ export class CreateCompanyDto {
 
   @IsString()
   @IsOptional()
+  streetName?: string;
+
+  @IsString()
+  @IsOptional()
+  buildingNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  plotIdentification?: string;
+
+  @IsString()
+  @IsOptional()
+  citySubdivisionName?: string;
+
+  @IsString()
+  @IsOptional()
   city?: string;
 
   @IsString()

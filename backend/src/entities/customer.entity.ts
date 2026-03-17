@@ -20,6 +20,18 @@ export class Customer {
   @Column({ type: 'varchar', length: 255, nullable: true })
   address: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  streetName: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  buildingNumber: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  plotIdentification: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  citySubdivisionName: string;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   city: string;
 

@@ -14,6 +14,10 @@ export default function NewCompanyPage() {
     name: '',
     vatNumber: '',
     address: '',
+    streetName: '',
+    buildingNumber: '',
+    plotIdentification: '',
+    citySubdivisionName: '',
     city: '',
     postalCode: '',
     country: 'Saudi Arabia',
@@ -61,6 +65,10 @@ export default function NewCompanyPage() {
         name: formData.name.trim(),
         vatNumber: formData.vatNumber.trim(),
         address: formData.address.trim() || undefined,
+        streetName: formData.streetName.trim() || undefined,
+        buildingNumber: formData.buildingNumber.trim() || undefined,
+        plotIdentification: formData.plotIdentification.trim() || undefined,
+        citySubdivisionName: formData.citySubdivisionName.trim() || undefined,
         city: formData.city.trim() || undefined,
         postalCode: formData.postalCode.trim() || undefined,
         country: formData.country.trim() || undefined,
@@ -219,10 +227,70 @@ export default function NewCompanyPage() {
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  rows={3}
+                  rows={2}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter street address"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="streetName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Street Name (ZATCA)
+                </label>
+                <input
+                  type="text"
+                  id="streetName"
+                  name="streetName"
+                  value={formData.streetName}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g. Prince Sultan Road"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label htmlFor="buildingNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                    Building Number (ZATCA)
+                  </label>
+                  <input
+                    type="text"
+                    id="buildingNumber"
+                    name="buildingNumber"
+                    value={formData.buildingNumber}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g. 2322"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="plotIdentification" className="block text-sm font-medium text-gray-700 mb-2">
+                    Plot / Parcel ID (ZATCA)
+                  </label>
+                  <input
+                    type="text"
+                    id="plotIdentification"
+                    name="plotIdentification"
+                    value={formData.plotIdentification}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g. 3XYZ4433"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="citySubdivisionName" className="block text-sm font-medium text-gray-700 mb-2">
+                    City Subdivision / District
+                  </label>
+                  <input
+                    type="text"
+                    id="citySubdivisionName"
+                    name="citySubdivisionName"
+                    value={formData.citySubdivisionName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g. Al-Murabba"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

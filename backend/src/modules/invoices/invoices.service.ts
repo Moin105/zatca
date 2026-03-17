@@ -17,8 +17,10 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { IssueInvoiceDto } from './dto/issue-invoice.dto';
 import { QrCodeService } from '../../services/qr-code.service';
 import { HashChainService } from '../../services/hash-chain.service';
+import { InvoiceSequenceService } from '../../services/invoice-sequence.service';
 import { XmlGeneratorService } from '../../services/xml-generator.service';
 import { PdfGeneratorService } from '../../services/pdf-generator.service';
+import { ZatcaSdkService, ZatcaValidationResult } from '../../services/zatca-sdk.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { AuditAction } from '../../entities/audit-log.entity';
 import * as path from 'path';
@@ -38,8 +40,10 @@ export class InvoicesService {
     private dataSource: DataSource,
     private qrCodeService: QrCodeService,
     private hashChainService: HashChainService,
+    private invoiceSequenceService: InvoiceSequenceService,
     private xmlGeneratorService: XmlGeneratorService,
     private pdfGeneratorService: PdfGeneratorService,
+    private zatcaSdkService: ZatcaSdkService,
     private auditLogsService: AuditLogsService,
     private configService: ConfigService,
   ) {}
@@ -82,10 +86,10 @@ export class InvoicesService {
     const vatAmount = items.reduce((sum, item) => sum + item.vatAmount, 0);
     const totalAmount = subtotal + vatAmount;
 
-    // Generate invoice number if not provided
+    // ZATCA Phase 1: sequential per-company invoice number
     const invoiceNumber =
       createInvoiceDto.invoiceNumber ||
-      `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      (await this.invoiceSequenceService.getNextInvoiceNumber(createInvoiceDto.companyId));
 
     // Create invoice
     const invoice = this.invoiceRepository.create({
@@ -240,8 +244,8 @@ export class InvoicesService {
       const company = invoice.company;
       const customer = invoice.customer;
 
-      // Get previous hash for chaining
-      const previousHash = await this.hashChainService.getPreviousInvoiceHash(
+      // Get previous hash for chaining (includes invoices and notes)
+      const previousHash = await this.hashChainService.getPreviousDocumentHash(
         invoice.companyId,
       );
 
@@ -272,17 +276,22 @@ export class InvoicesService {
         }
       }
 
-      // Generate XML
+      // ZATCA Phase 1: ProfileID 01 = standard (B2B), 02 = simplified (B2C)
+      const profileID = customer.type === 'B2C' ? '02' : '01';
+      const documentTypeLabel =
+        customer.type === 'B2C' ? 'Simplified Tax Invoice' : 'Tax Invoice';
+
+      // Generate XML with ProfileID and supplier/buyer address
       let xmlContent: string;
       try {
         xmlContent = this.xmlGeneratorService.generateUBLInvoice(
           invoice,
           company,
           customer,
+          { profileID },
         );
         invoice.xmlContent = xmlContent;
 
-        // Save XML file
         const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
         const xmlPath = path.join(
           storagePath,
@@ -295,12 +304,20 @@ export class InvoicesService {
         }
         fs.writeFileSync(xmlPath, xmlContent, 'utf-8');
         invoice.xmlPath = xmlPath;
+
+        // Optional: sign XML with ZATCA SDK (set ZATCA_SIGN_INVOICES=true to enable)
+        const signEnabled = this.configService.get<string>('ZATCA_SIGN_INVOICES', 'false') === 'true';
+        if (signEnabled && this.zatcaSdkService.isAvailable()) {
+          const signResult = await this.zatcaSdkService.signInvoiceXml(xmlPath, xmlPath);
+          if (signResult.success && signResult.signedPath && fs.existsSync(signResult.signedPath)) {
+            invoice.xmlContent = fs.readFileSync(signResult.signedPath, 'utf-8');
+          }
+        }
       } catch (error) {
         console.error('Error generating XML:', error);
-        // Continue without XML file if generation fails
       }
 
-      // Generate PDF
+      // Generate PDF with invoice type description
       try {
         const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
         const pdfPath = path.join(
@@ -317,11 +334,11 @@ export class InvoicesService {
           company,
           customer,
           pdfPath,
+          documentTypeLabel,
         );
         invoice.pdfPath = pdfPath;
       } catch (error) {
         console.error('Error generating PDF:', error);
-        // Continue without PDF file if generation fails
       }
 
       // Prepare all fields to update
@@ -407,5 +424,43 @@ export class InvoicesService {
 
   async validateHashChain(companyId: string): Promise<boolean> {
     return await this.hashChainService.validateHashChain(companyId);
+  }
+
+  /**
+   * Validate an issued invoice's XML against ZATCA business rules using the local SDK CLI.
+   * Requires ZATCA SDK JAR in backend/zatca-envoice-sdk-203/Apps/ and Java 21 or 22.
+   * If the XML file is missing but xmlContent is stored, it is written to storage/xml first.
+   */
+  async validateWithZatcaSdk(id: string): Promise<ZatcaValidationResult> {
+    const invoice = await this.findOne(id);
+    if (invoice.status !== InvoiceStatus.ISSUED) {
+      throw new BadRequestException('Only issued invoices can be validated with ZATCA SDK');
+    }
+    let xmlPath = invoice.xmlPath;
+    const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
+    const expectedXmlPath = path.join(storagePath, 'xml', `${invoice.invoiceNumber}.xml`);
+
+    if (!invoice.xmlContent) {
+      throw new BadRequestException(
+        'Invoice has no XML content. Re-issue the invoice to generate XML.',
+      );
+    }
+
+    if (!xmlPath || !fs.existsSync(path.isAbsolute(xmlPath) ? xmlPath : path.resolve(xmlPath))) {
+      const dir = path.dirname(expectedXmlPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(expectedXmlPath, invoice.xmlContent, 'utf-8');
+      xmlPath = expectedXmlPath;
+    }
+
+    const absolutePath = path.isAbsolute(xmlPath) ? xmlPath : path.resolve(xmlPath);
+    return this.zatcaSdkService.validateInvoiceXml(absolutePath);
+  }
+
+  /** Check if ZATCA SDK CLI is available for local validation. */
+  isZatcaSdkAvailable(): boolean {
+    return this.zatcaSdkService.isAvailable();
   }
 }
