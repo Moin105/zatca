@@ -155,7 +155,7 @@ export default function SecurityGuard() {
             if (args.length > 0 && typeof args[args.length - 1] === 'string') {
               throw new Error('Function constructor is disabled for security')
             }
-            return originalFunction.apply(this, args)
+            return originalFunction(...args)
           } as any
         } catch (e) {
           // Ignore errors in case of strict mode
