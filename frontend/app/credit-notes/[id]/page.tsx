@@ -34,6 +34,23 @@ export default function CreditNoteDetailPage() {
     }
   }
 
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await api.get(`/credit-notes/${id}/pdf`, { responseType: 'blob' })
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${note?.noteNumber || 'credit-note'}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to download PDF')
+    }
+  }
+
   if (loading || !note) return <div className="p-8">Loading...</div>
 
   const isIssued = note.status === 'issued'
@@ -43,11 +60,18 @@ export default function CreditNoteDetailPage() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link href="/credit-notes" className="text-gray-600 hover:text-gray-900">← Credit Notes</Link>
-          {!isIssued && (
-            <button onClick={handleIssue} disabled={issuing} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {issuing ? 'Issuing...' : 'Issue Credit Note'}
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {isIssued && (
+              <button onClick={handleDownloadPdf} className="px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50">
+                Download PDF
+              </button>
+            )}
+            {!isIssued && (
+              <button onClick={handleIssue} disabled={issuing} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                {issuing ? 'Issuing...' : 'Issue Credit Note'}
+              </button>
+            )}
+          </div>
         </div>
       </header>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

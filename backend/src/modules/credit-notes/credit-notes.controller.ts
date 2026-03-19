@@ -6,10 +6,12 @@ import {
   Param,
   Delete,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { CreditNotesService } from './credit-notes.service';
 import { CreateCreditNoteDto } from './dto/create-credit-note.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { Response } from 'express';
 
 @Controller('credit-notes')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +36,15 @@ export class CreditNotesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.creditNotesService.findOne(id);
+  }
+
+  @Get(':id/pdf')
+  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+    const { absolutePath, filename } =
+      await this.creditNotesService.getCreditNotePdfForDownload(id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.sendFile(absolutePath);
   }
 
   @Post(':id/issue')

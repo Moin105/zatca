@@ -28,6 +28,7 @@ interface Invoice {
   currentHash?: string
   previousHash?: string
   qrCode?: string
+  pdfPath?: string
   company: {
     id: string
     name: string
@@ -95,6 +96,23 @@ export default function InvoiceDetailPage() {
       alert(error.response?.data?.message || 'Failed to issue invoice')
     } finally {
       setIssuing(false)
+    }
+  }
+
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await api.get(`/invoices/${invoiceId}/pdf`, { responseType: 'blob' })
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${invoice?.invoiceNumber || 'invoice'}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to download PDF')
     }
   }
 
@@ -172,6 +190,14 @@ export default function InvoiceDetailPage() {
                   className="px-4 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all font-medium disabled:opacity-50"
                 >
                   {issuing ? 'Issuing...' : 'Issue Invoice'}
+                </button>
+              )}
+              {isIssued && (
+                <button
+                  onClick={handleDownloadPdf}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Download PDF
                 </button>
               )}
             </div>

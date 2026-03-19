@@ -48,6 +48,7 @@
     "qrcode": "^1.5.3",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
+    "tafgeetjs": "^2.1.0",
     "typeorm": "^0.3.17",
     "uuid": "^9.0.1",
     "xmlbuilder2": "^3.0.2"

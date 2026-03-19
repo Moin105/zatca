@@ -407,10 +407,6 @@ export class InvoicesService {
   async remove(id: string): Promise<void> {
     const invoice = await this.findOne(id);
 
-    if (invoice.immutableFlag || invoice.status === InvoiceStatus.ISSUED) {
-      throw new BadRequestException('Issued invoices cannot be deleted');
-    }
-
     await this.invoiceRepository.remove(invoice);
 
     // Log audit
@@ -457,6 +453,47 @@ export class InvoicesService {
 
     const absolutePath = path.isAbsolute(xmlPath) ? xmlPath : path.resolve(xmlPath);
     return this.zatcaSdkService.validateInvoiceXml(absolutePath);
+  }
+
+  async getInvoicePdfForDownload(id: string): Promise<{ absolutePath: string; filename: string }> {
+    const invoice = await this.findOne(id);
+    if (invoice.status !== InvoiceStatus.ISSUED) {
+      throw new BadRequestException('PDF is available only for issued invoices');
+    }
+
+    const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
+    const allowedDir = path.resolve(storagePath, 'pdf');
+    const expectedPath = path.resolve(allowedDir, `${invoice.invoiceNumber}.pdf`);
+    const resolvedPath = invoice.pdfPath ? path.resolve(invoice.pdfPath) : expectedPath;
+    if (!resolvedPath.startsWith(allowedDir + path.sep)) {
+      throw new BadRequestException('Invalid PDF path');
+    }
+
+    // If missing, regenerate PDF for issued invoices (supports older records)
+    if (!invoice.pdfPath || !fs.existsSync(resolvedPath)) {
+      const dir = path.dirname(expectedPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const documentTypeLabel =
+        invoice.customer?.type === 'B2C' ? 'Simplified Tax Invoice' : 'Tax Invoice';
+      await this.pdfGeneratorService.generateInvoicePDF(
+        invoice,
+        invoice.company,
+        invoice.customer,
+        expectedPath,
+        documentTypeLabel,
+      );
+      await this.invoiceRepository.update(id, { pdfPath: expectedPath });
+      if (!fs.existsSync(expectedPath)) {
+        throw new NotFoundException('PDF file not found on disk');
+      }
+      return { absolutePath: expectedPath, filename: `${invoice.invoiceNumber}.pdf` };
+    }
+    return {
+      absolutePath: resolvedPath,
+      filename: `${invoice.invoiceNumber}.pdf`,
+    };
   }
 
   /** Check if ZATCA SDK CLI is available for local validation. */

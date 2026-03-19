@@ -6,10 +6,12 @@ import {
   Param,
   Delete,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { DebitNotesService } from './debit-notes.service';
 import { CreateDebitNoteDto } from './dto/create-debit-note.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { Response } from 'express';
 
 @Controller('debit-notes')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +36,15 @@ export class DebitNotesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.debitNotesService.findOne(id);
+  }
+
+  @Get(':id/pdf')
+  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+    const { absolutePath, filename } =
+      await this.debitNotesService.getDebitNotePdfForDownload(id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.sendFile(absolutePath);
   }
 
   @Post(':id/issue')
