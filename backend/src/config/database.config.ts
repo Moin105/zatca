@@ -18,13 +18,29 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
   constructor(private configService: ConfigService) {}
 
   createTypeOrmOptions(): TypeOrmModuleOptions {
+    const databaseUrl = this.configService.get<string>('DATABASE_URL');
+    const sslEnabled =
+      this.configService.get<string>('DB_SSL') === 'true' ||
+      this.configService.get<string>('DB_SSL') === '1' ||
+      !!databaseUrl;
+    const sslRejectUnauthorized =
+      this.configService.get<string>('DB_SSL_REJECT_UNAUTHORIZED', 'false') === 'true';
+
     return {
       type: 'postgres',
-      host: this.configService.get<string>('DB_HOST', 'localhost'),
-      port: this.configService.get<number>('DB_PORT', 5432),
-      username: this.configService.get<string>('DB_USERNAME', 'postgres'),
-      password: this.configService.get<string>('DB_PASSWORD', 'postgres'),
-      database: this.configService.get<string>('DB_DATABASE', 'zatca_einvoicing'),
+      ...(databaseUrl
+        ? {
+            url: databaseUrl,
+            ssl: sslEnabled ? { rejectUnauthorized: sslRejectUnauthorized } : undefined,
+          }
+        : {
+            host: this.configService.get<string>('DB_HOST', 'localhost'),
+            port: this.configService.get<number>('DB_PORT', 5432),
+            username: this.configService.get<string>('DB_USERNAME', 'postgres'),
+            password: this.configService.get<string>('DB_PASSWORD', 'postgres'),
+            database: this.configService.get<string>('DB_DATABASE', 'zatca_einvoicing'),
+            ssl: sslEnabled ? { rejectUnauthorized: sslRejectUnauthorized } : undefined,
+          }),
       entities: [
         Company,
         Customer,
