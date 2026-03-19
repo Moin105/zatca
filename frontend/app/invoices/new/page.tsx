@@ -36,7 +36,6 @@ export default function NewInvoicePage() {
   const [formData, setFormData] = useState({
     companyId: '',
     customerId: '',
-    invoiceNumber: '',
     issueDateTime: new Date().toISOString().split('T')[0],
     items: [
       {
@@ -144,7 +143,6 @@ export default function NewInvoicePage() {
       const payload = {
         companyId: formData.companyId,
         customerId: formData.customerId,
-        invoiceNumber: formData.invoiceNumber || undefined,
         issueDateTime: formData.issueDateTime || new Date().toISOString(),
         items: formData.items.map((item) => ({
           name: item.name,
@@ -263,34 +261,18 @@ export default function NewInvoicePage() {
           </div>
 
           {/* Invoice Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div>
-              <label htmlFor="invoiceNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                Invoice Number (Optional)
-              </label>
-              <input
-                type="text"
-                id="invoiceNumber"
-                value={formData.invoiceNumber}
-                onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                placeholder="Auto-generated if empty"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="issueDateTime" className="block text-sm font-medium text-gray-700 mb-2">
-                Issue Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                id="issueDateTime"
-                required
-                value={formData.issueDateTime}
-                onChange={(e) => setFormData({ ...formData, issueDateTime: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+          <div className="mb-8 max-w-md">
+            <label htmlFor="issueDateTime" className="block text-sm font-medium text-gray-700 mb-2">
+              Issue Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              id="issueDateTime"
+              required
+              value={formData.issueDateTime}
+              onChange={(e) => setFormData({ ...formData, issueDateTime: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
 
           {/* Invoice Items */}

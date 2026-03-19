@@ -7,18 +7,38 @@ import * as bcrypt from 'bcrypt';
 // Load environment variables
 config({ path: path.join(__dirname, '../../.env') });
 
-async function seedAdmin() {
-  const dataSource = new DataSource({
-    type: 'postgres',
+function buildDataSourceOptions() {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  const sslRejectUnauthorized =
+    process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true';
+
+  if (databaseUrl) {
+    return {
+      type: 'postgres' as const,
+      url: databaseUrl,
+      ssl: { rejectUnauthorized: sslRejectUnauthorized },
+      entities: [User],
+      // Empty Neon DB: create users table on first seed (app sync creates the rest on startup)
+      synchronize: true,
+      logging: false,
+    };
+  }
+
+  return {
+    type: 'postgres' as const,
     host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
+    port: parseInt(process.env.DB_PORT || '5432', 10),
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_DATABASE || 'zatca_einvoicing',
     entities: [User],
-    synchronize: false,
+    synchronize: true,
     logging: false,
-  });
+  };
+}
+
+async function seedAdmin() {
+  const dataSource = new DataSource(buildDataSourceOptions());
 
   try {
     await dataSource.initialize();
