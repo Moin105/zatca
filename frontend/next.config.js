@@ -1,8 +1,17 @@
 /** @type {import('next').NextConfig} */
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+let apiOrigin = 'http://localhost:3001'
+
+try {
+  apiOrigin = new URL(apiUrl).origin
+} catch {
+  // Keep localhost fallback if env var is not a valid URL
+}
+
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+    NEXT_PUBLIC_API_URL: apiUrl,
   },
   // Security headers
   async headers() {
@@ -34,7 +43,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' http://localhost:3001",
+              `connect-src 'self' ${apiOrigin} http://localhost:3001`,
               "frame-ancestors 'none'",
             ].join('; '),
           },
