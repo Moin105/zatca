@@ -207,4 +207,39 @@ export class CreditNotesService {
 
     return this.findOne(id);
   }
+
+  async getCreditNotePdfForDownload(
+    id: string,
+  ): Promise<{ absolutePath: string; filename: string }> {
+    const note = await this.findOne(id);
+    if (note.status !== CreditNoteStatus.ISSUED) {
+      throw new BadRequestException('PDF is available only for issued credit notes');
+    }
+    const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
+    const allowedDir = path.resolve(storagePath, 'pdf');
+    const expectedPath = path.resolve(allowedDir, `${note.noteNumber}.pdf`);
+    const resolvedPath = note.pdfPath ? path.resolve(note.pdfPath) : expectedPath;
+    if (!resolvedPath.startsWith(allowedDir + path.sep)) {
+      throw new BadRequestException('Invalid PDF path');
+    }
+
+    // Regenerate if missing (supports older records)
+    if (!note.pdfPath || !fs.existsSync(resolvedPath)) {
+      const dir = path.dirname(expectedPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      await this.pdfGeneratorService.generateCreditNotePDF(
+        note,
+        note.company,
+        note.customer,
+        expectedPath,
+      );
+      await this.creditNoteRepository.update(id, { pdfPath: expectedPath });
+      if (!fs.existsSync(expectedPath)) {
+        throw new NotFoundException('PDF file not found on disk');
+      }
+      return { absolutePath: expectedPath, filename: `${note.noteNumber}.pdf` };
+    }
+
+    return { absolutePath: resolvedPath, filename: `${note.noteNumber}.pdf` };
+  }
 }

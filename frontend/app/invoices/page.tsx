@@ -40,6 +40,18 @@ export default function InvoicesPage() {
     }
   }
 
+  const handleDelete = async (invoice: Invoice) => {
+    if (!confirm(`Delete invoice ${invoice.invoiceNumber}? This cannot be undone.`)) {
+      return
+    }
+    try {
+      await api.delete(`/invoices/${invoice.id}`)
+      await fetchInvoices()
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to delete invoice')
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -145,12 +157,20 @@ export default function InvoicesPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <Link
-                      href={`/invoices/${invoice.id}`}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      View
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/invoices/${invoice.id}`}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        View
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(invoice)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
