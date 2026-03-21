@@ -39,6 +39,18 @@ export default function CompaniesPage() {
     }
   }
 
+  const handleDelete = async (company: Company) => {
+    if (!confirm(`Remove "${company.name}" from the list? Invoices that use it are kept; you can add the company again later.`)) {
+      return
+    }
+    try {
+      await api.delete(`/companies/${company.id}`)
+      await fetchCompanies()
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to remove company')
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -90,7 +102,16 @@ export default function CompaniesPage() {
               key={company.id}
               className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all border border-gray-100"
             >
-              <h2 className="text-xl font-semibold mb-2">{company.name}</h2>
+              <div className="flex justify-between items-start gap-2 mb-2">
+                <h2 className="text-xl font-semibold">{company.name}</h2>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(company)}
+                  className="text-sm text-red-600 hover:text-red-800 font-medium shrink-0"
+                >
+                  Delete
+                </button>
+              </div>
               <p className="text-gray-600 mb-1">VAT: {company.vatNumber}</p>
               {company.address && (
                 <p className="text-gray-600 mb-1">{company.address}</p>

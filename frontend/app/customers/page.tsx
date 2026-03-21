@@ -40,6 +40,18 @@ export default function CustomersPage() {
     }
   }
 
+  const handleDelete = async (customer: Customer) => {
+    if (!confirm(`Remove "${customer.name}" from the list? Invoices that use this customer are kept; you can add the customer again later.`)) {
+      return
+    }
+    try {
+      await api.delete(`/customers/${customer.id}`)
+      await fetchCustomers()
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to remove customer')
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -91,17 +103,26 @@ export default function CustomersPage() {
               key={customer.id}
               className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all border border-gray-100"
             >
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start gap-2 mb-2">
                 <h2 className="text-xl font-semibold">{customer.name}</h2>
-                <span
-                  className={`px-2 py-1 text-xs rounded ${
-                    customer.type === 'B2B'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}
-                >
-                  {customer.type}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span
+                    className={`px-2 py-1 text-xs rounded ${
+                      customer.type === 'B2B'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}
+                  >
+                    {customer.type}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(customer)}
+                    className="text-sm text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               {customer.vatNumber && (
                 <p className="text-gray-600 mb-1">VAT: {customer.vatNumber}</p>
