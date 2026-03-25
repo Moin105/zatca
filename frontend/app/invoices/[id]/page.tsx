@@ -215,12 +215,12 @@ export default function InvoiceDetailPage() {
               <p className="text-gray-600">Invoice Number: {invoice.invoiceNumber}</p>
               <p className="text-gray-600">Date: {formatDate(invoice.issueDateTime)}</p>
             </div>
-            {invoice.customer?.type === 'B2C' && invoice.qrCode && (
+            {invoice.qrCode && (
               <div className="text-center">
                 <div className="bg-white p-2 rounded border border-gray-200 inline-block">
                   <img src={invoice.qrCode} alt="QR Code" className="w-32 h-32" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">ZATCA QR Code (simplified invoice)</p>
+                <p className="text-xs text-gray-500 mt-2">ZATCA QR Code</p>
               </div>
             )}
           </div>

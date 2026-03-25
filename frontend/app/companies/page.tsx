@@ -69,8 +69,8 @@ export default function CompaniesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <Link href="/dashboard" className="flex items-center space-x-3">
-              <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-                <Image src={zatcaLogo} alt="ZATCA logo" width={34} height={34} className="object-contain" />
+              <div className="h-14 w-14 rounded-lg flex items-center justify-center">
+                <Image src={zatcaLogo} alt="ZATCA logo" width={45} height={45} className="object-contain" />
               </div>
               <span className="text-sm text-gray-600 hover:text-gray-900">← Back to Dashboard</span>
             </Link>

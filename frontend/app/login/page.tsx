@@ -48,8 +48,8 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-br from-blue-600 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-            <Image src={zatcaLogo} alt="ZATCA logo" width={44} height={44} className="object-contain" />
+          <div className="mx-auto h-14 w-14 rounded-lg flex items-center justify-center">
+            <Image src={zatcaLogo} alt="ZATCA logo" width={55} height={55} className="object-contain" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             ZATCA E-Invoicing
