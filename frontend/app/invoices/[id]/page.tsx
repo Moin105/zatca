@@ -325,18 +325,6 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
 
-        {/* Actions */}
-        {canEdit && (
-          <div className="mt-6 flex justify-end space-x-4">
-            <Link
-              href={`/invoices/${invoiceId}/edit`}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
-              Edit Invoice
-            </Link>
-          </div>
-        )}
-
         {/* Issue Credit / Debit Note (only for issued invoices) */}
         {isIssued && (
           <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
