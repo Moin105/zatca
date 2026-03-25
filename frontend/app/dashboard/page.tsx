@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import axios from 'axios'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import api from '../lib/api'
 
 interface User {
   id: string
@@ -14,9 +12,16 @@ interface User {
   role: string
 }
 
+interface StatsSummary {
+  companyCount: number
+  customerCount: number
+  invoiceCount: number
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  const [stats, setStats] = useState<StatsSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -26,20 +31,23 @@ export default function DashboardPage() {
       return
     }
 
-    // Verify token and get user info
-    axios
-      .get(`${API_URL}/auth/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response) => {
-        setUser(response.data)
-        setLoading(false)
-      })
-      .catch(() => {
+    const load = async () => {
+      try {
+        const [profileRes, statsRes] = await Promise.all([
+          api.get<User>('/auth/profile'),
+          api.get<StatsSummary>('/stats/summary'),
+        ])
+        setUser(profileRes.data)
+        setStats(statsRes.data)
+      } catch {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         router.push('/login')
-      })
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
   }, [router])
 
   const handleLogout = () => {
@@ -105,7 +113,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Companies</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">-</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats?.companyCount ?? '—'}
+                </p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,7 +129,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Customers</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">-</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats?.customerCount ?? '—'}
+                </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +145,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Invoices</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">-</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats?.invoiceCount ?? '—'}
+                </p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

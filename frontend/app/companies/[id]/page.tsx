@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../lib/api'
 
-export default function NewCompanyPage() {
+export default function EditCompanyPage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params?.id as string
+  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -29,6 +32,45 @@ export default function NewCompanyPage() {
     isActive: true,
   })
 
+  useEffect(() => {
+    if (!id) {
+      setLoading(false)
+      setError('Invalid company')
+      return
+    }
+    const load = async () => {
+      setError('')
+      try {
+        const r = await api.get(`/companies/${id}`)
+        const c = r.data
+        setFormData({
+          name: c.name ?? '',
+          vatNumber: c.vatNumber ?? '',
+          commercialRegistration: c.commercialRegistration ?? '',
+          address: c.address ?? '',
+          streetName: c.streetName ?? '',
+          buildingNumber: c.buildingNumber ?? '',
+          plotIdentification: c.plotIdentification ?? '',
+          citySubdivisionName: c.citySubdivisionName ?? '',
+          city: c.city ?? '',
+          postalCode: c.postalCode ?? '',
+          country: c.country ?? 'Saudi Arabia',
+          phone: c.phone ?? '',
+          email: c.email ?? '',
+          website: c.website ?? '',
+          logo: c.logo ?? '',
+          isActive: c.isActive !== false,
+        })
+      } catch (e: any) {
+        if (e.response?.status === 401) router.push('/login')
+        else setError(e.response?.data?.message || 'Failed to load company')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [id, router])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
     setFormData({
@@ -39,12 +81,9 @@ export default function NewCompanyPage() {
 
   const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) {
-      setFormData((prev) => ({ ...prev, logo: '' }))
-      return
-    }
+    if (!file) return
     if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file (PNG, JPG, etc.)')
+      setError('Please choose an image file')
       return
     }
     if (file.size > 2 * 1024 * 1024) {
@@ -53,8 +92,7 @@ export default function NewCompanyPage() {
     }
     const reader = new FileReader()
     reader.onload = () => {
-      const dataUrl = reader.result as string
-      setFormData((prev) => ({ ...prev, logo: dataUrl }))
+      setFormData((prev) => ({ ...prev, logo: reader.result as string }))
       setError('')
     }
     reader.readAsDataURL(file)
@@ -104,15 +142,23 @@ export default function NewCompanyPage() {
         isActive: formData.isActive,
       }
 
-      const response = await api.post('/companies', payload)
+      await api.patch(`/companies/${id}`, payload)
       router.push(`/companies`)
     } catch (error: any) {
       setError(
-        error.response?.data?.message || 'Failed to create company. Please try again.'
+        error.response?.data?.message || 'Failed to update company. Please try again.'
       )
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    )
   }
 
   return (
@@ -135,8 +181,8 @@ export default function NewCompanyPage() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Company</h1>
-          <p className="text-gray-600">Add seller company information for ZATCA compliance</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Company</h1>
+          <p className="text-gray-600">Update seller company information for ZATCA compliance</p>
         </div>
 
         {error && (
@@ -398,12 +444,12 @@ export default function NewCompanyPage() {
                   onChange={handleLogoFile}
                   className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
-                <p className="mt-1 text-sm text-gray-500">PNG or JPG, max 2MB. Stored as data for PDFs.</p>
+                <p className="mt-1 text-sm text-gray-500">PNG or JPG, max 2MB. Leave unchanged if you do not pick a new file.</p>
                 {formData.logo && (
                   <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-1">Preview</p>
+                    <p className="text-xs text-gray-500 mb-1">Current logo</p>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formData.logo} alt="Logo preview" className="h-20 w-auto max-w-full object-contain border border-gray-200 rounded" />
+                    <img src={formData.logo} alt="Logo" className="h-20 w-auto max-w-full object-contain border border-gray-200 rounded" />
                   </div>
                 )}
               </div>
@@ -437,7 +483,7 @@ export default function NewCompanyPage() {
               disabled={submitting}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all shadow-lg hover:shadow-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Creating...' : 'Create Company'}
+              {submitting ? 'Saving...' : 'Save changes'}
             </button>
           </div>
         </form>

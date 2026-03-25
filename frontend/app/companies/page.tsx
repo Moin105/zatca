@@ -104,13 +104,21 @@ export default function CompaniesPage() {
             >
               <div className="flex justify-between items-start gap-2 mb-2">
                 <h2 className="text-xl font-semibold">{company.name}</h2>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(company)}
-                  className="text-sm text-red-600 hover:text-red-800 font-medium shrink-0"
-                >
-                  Delete
-                </button>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Link
+                    href={`/companies/${company.id}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(company)}
+                    className="text-sm text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               <p className="text-gray-600 mb-1">VAT: {company.vatNumber}</p>
               {company.address && (

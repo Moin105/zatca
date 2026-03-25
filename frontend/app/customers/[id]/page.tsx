@@ -1,19 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../lib/api'
 
-export default function NewCompanyPage() {
+export default function EditCustomerPage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params?.id as string
+  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
     name: '',
-    vatNumber: '',
-    commercialRegistration: '',
+    email: '',
+    phone: '',
     address: '',
     streetName: '',
     buildingNumber: '',
@@ -22,42 +25,54 @@ export default function NewCompanyPage() {
     city: '',
     postalCode: '',
     country: 'Saudi Arabia',
-    phone: '',
-    email: '',
-    website: '',
-    logo: '',
+    vatNumber: '',
+    type: 'B2C' as 'B2B' | 'B2C',
     isActive: true,
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    if (!id) {
+      setLoading(false)
+      setError('Invalid customer')
+      return
+    }
+    const load = async () => {
+      setError('')
+      try {
+        const r = await api.get(`/customers/${id}`)
+        const c = r.data
+        setFormData({
+          name: c.name ?? '',
+          email: c.email ?? '',
+          phone: c.phone ?? '',
+          address: c.address ?? '',
+          streetName: c.streetName ?? '',
+          buildingNumber: c.buildingNumber ?? '',
+          plotIdentification: c.plotIdentification ?? '',
+          citySubdivisionName: c.citySubdivisionName ?? '',
+          city: c.city ?? '',
+          postalCode: c.postalCode ?? '',
+          country: c.country ?? 'Saudi Arabia',
+          vatNumber: c.vatNumber ?? '',
+          type: c.type === 'B2B' ? 'B2B' : 'B2C',
+          isActive: c.isActive !== false,
+        })
+      } catch (e: any) {
+        if (e.response?.status === 401) router.push('/login')
+        else setError(e.response?.data?.message || 'Failed to load customer')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [id, router])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     })
-  }
-
-  const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) {
-      setFormData((prev) => ({ ...prev, logo: '' }))
-      return
-    }
-    if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file (PNG, JPG, etc.)')
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Logo must be 2MB or smaller')
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result as string
-      setFormData((prev) => ({ ...prev, logo: dataUrl }))
-      setError('')
-    }
-    reader.readAsDataURL(file)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,13 +82,7 @@ export default function NewCompanyPage() {
 
     // Validation
     if (!formData.name.trim()) {
-      setError('Company name is required')
-      setSubmitting(false)
-      return
-    }
-
-    if (!formData.vatNumber.trim()) {
-      setError('VAT Number is required')
+      setError('Customer name is required')
       setSubmitting(false)
       return
     }
@@ -87,8 +96,8 @@ export default function NewCompanyPage() {
     try {
       const payload = {
         name: formData.name.trim(),
-        vatNumber: formData.vatNumber.trim(),
-        commercialRegistration: formData.commercialRegistration.trim() || undefined,
+        email: formData.email.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
         address: formData.address.trim() || undefined,
         streetName: formData.streetName.trim() || undefined,
         buildingNumber: formData.buildingNumber.trim() || undefined,
@@ -97,22 +106,28 @@ export default function NewCompanyPage() {
         city: formData.city.trim() || undefined,
         postalCode: formData.postalCode.trim() || undefined,
         country: formData.country.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
-        email: formData.email.trim() || undefined,
-        website: formData.website.trim() || undefined,
-        logo: formData.logo || undefined,
+        vatNumber: formData.vatNumber.trim() || undefined,
+        type: formData.type,
         isActive: formData.isActive,
       }
 
-      const response = await api.post('/companies', payload)
-      router.push(`/companies`)
+      await api.patch(`/customers/${id}`, payload)
+      router.push(`/customers`)
     } catch (error: any) {
       setError(
-        error.response?.data?.message || 'Failed to create company. Please try again.'
+        error.response?.data?.message || 'Failed to update customer. Please try again.'
       )
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    )
   }
 
   return (
@@ -122,11 +137,11 @@ export default function NewCompanyPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <Link href="/companies" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
+              <Link href="/customers" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>Back to Companies</span>
+                <span>Back to Customers</span>
               </Link>
             </div>
           </div>
@@ -135,8 +150,8 @@ export default function NewCompanyPage() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Company</h1>
-          <p className="text-gray-600">Add seller company information for ZATCA compliance</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Customer</h1>
+          <p className="text-gray-600">Update customer information for invoice generation</p>
         </div>
 
         {error && (
@@ -148,12 +163,12 @@ export default function NewCompanyPage() {
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
           {/* Required Fields */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Required Information</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
             
             <div className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name <span className="text-red-500">*</span>
+                  Customer Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -163,41 +178,27 @@ export default function NewCompanyPage() {
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter company name"
+                  placeholder="Enter customer name"
                 />
               </div>
 
               <div>
-                <label htmlFor="vatNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                  VAT Number (Tax ID) <span className="text-red-500">*</span>
+                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Type
                 </label>
-                <input
-                  type="text"
-                  id="vatNumber"
-                  name="vatNumber"
-                  required
-                  value={formData.vatNumber}
+                <select
+                  id="type"
+                  name="type"
+                  value={formData.type}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter VAT registration number"
-                />
-                <p className="mt-1 text-sm text-gray-500">ZATCA VAT registration number</p>
+                >
+                  <option value="B2B">B2B (Business to Business)</option>
+                  <option value="B2C">B2C (Business to Consumer)</option>
+                </select>
+                <p className="mt-1 text-sm text-gray-500">B2B requires VAT number, B2C uses simplified invoices</p>
               </div>
 
-              <div>
-                <label htmlFor="commercialRegistration" className="block text-sm font-medium text-gray-700 mb-2">
-                  Commercial Registration (CR)
-                </label>
-                <input
-                  type="text"
-                  id="commercialRegistration"
-                  name="commercialRegistration"
-                  value={formData.commercialRegistration}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g. 1010123456"
-                />
-              </div>
             </div>
           </div>
 
@@ -217,7 +218,7 @@ export default function NewCompanyPage() {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="company@example.com"
+                  placeholder="customer@example.com"
                 />
               </div>
 
@@ -233,21 +234,6 @@ export default function NewCompanyPage() {
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="+966 XX XXX XXXX"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-2">
-                  Website
-                </label>
-                <input
-                  type="url"
-                  id="website"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="https://www.example.com"
                 />
               </div>
             </div>
@@ -267,7 +253,7 @@ export default function NewCompanyPage() {
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  rows={2}
+                  rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter street address"
                 />
@@ -300,7 +286,6 @@ export default function NewCompanyPage() {
                     value={formData.buildingNumber}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g. 2322"
                   />
                 </div>
                 <div>
@@ -314,7 +299,6 @@ export default function NewCompanyPage() {
                     value={formData.plotIdentification}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g. 3XYZ4433"
                   />
                 </div>
                 <div>
@@ -328,7 +312,6 @@ export default function NewCompanyPage() {
                     value={formData.citySubdivisionName}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g. Al-Murabba"
                   />
                 </div>
               </div>
@@ -382,52 +365,48 @@ export default function NewCompanyPage() {
             </div>
           </div>
 
-          {/* Additional Information */}
+          {/* Tax Information */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Additional Information</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Tax Information</h2>
             
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="logoFile" className="block text-sm font-medium text-gray-700 mb-2">
-                  Company logo
-                </label>
-                <input
-                  type="file"
-                  id="logoFile"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  onChange={handleLogoFile}
-                  className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                <p className="mt-1 text-sm text-gray-500">PNG or JPG, max 2MB. Stored as data for PDFs.</p>
-                {formData.logo && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-1">Preview</p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formData.logo} alt="Logo preview" className="h-20 w-auto max-w-full object-contain border border-gray-200 rounded" />
-                  </div>
-                )}
-              </div>
+            <div>
+              <label htmlFor="vatNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                VAT Number (Required for B2B)
+              </label>
+              <input
+                type="text"
+                id="vatNumber"
+                name="vatNumber"
+                value={formData.vatNumber}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter VAT number (if B2B)"
+              />
+              <p className="mt-1 text-sm text-gray-500">Required for B2B customers, optional for B2C</p>
+            </div>
+          </div>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
-                  Active (Company is currently active)
-                </label>
-              </div>
+          {/* Additional Options */}
+          <div className="mb-8">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isActive"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={handleChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+                Active (Customer is currently active)
+              </label>
             </div>
           </div>
 
           {/* Submit Buttons */}
           <div className="flex justify-end space-x-4">
             <Link
-              href="/companies"
+              href="/customers"
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
               Cancel
@@ -437,7 +416,7 @@ export default function NewCompanyPage() {
               disabled={submitting}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all shadow-lg hover:shadow-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Creating...' : 'Create Company'}
+              {submitting ? 'Saving...' : 'Save changes'}
             </button>
           </div>
         </form>

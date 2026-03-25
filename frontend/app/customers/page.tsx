@@ -115,6 +115,12 @@ export default function CustomersPage() {
                   >
                     {customer.type}
                   </span>
+                  <Link
+                    href={`/customers/${customer.id}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Edit
+                  </Link>
                   <button
                     type="button"
                     onClick={() => handleDelete(customer)}
