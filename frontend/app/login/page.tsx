@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
+import Image from 'next/image'
+import zatcaLogo from '../images/logo.png'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -47,7 +49,7 @@ export default function LoginPage() {
         {/* Logo and Header */}
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-gradient-to-br from-blue-600 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-            <span className="text-white text-2xl font-bold">Z</span>
+            <Image src={zatcaLogo} alt="ZATCA logo" width={44} height={44} className="object-contain" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             ZATCA E-Invoicing

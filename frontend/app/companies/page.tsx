@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import api from '../lib/api'
+import zatcaLogo from '../images/logo.png'
 
 interface Company {
   id: string
@@ -68,7 +70,7 @@ export default function CompaniesPage() {
           <div className="flex justify-between items-center py-4">
             <Link href="/dashboard" className="flex items-center space-x-3">
               <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">Z</span>
+                <Image src={zatcaLogo} alt="ZATCA logo" width={34} height={34} className="object-contain" />
               </div>
               <span className="text-sm text-gray-600 hover:text-gray-900">← Back to Dashboard</span>
             </Link>

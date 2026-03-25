@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import api from '../lib/api'
+import zatcaLogo from '../images/logo.png'
 
 interface User {
   id: string
@@ -72,7 +74,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">Z</span>
+                <Image src={zatcaLogo} alt="ZATCA logo" width={34} height={34} className="object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">ZATCA E-Invoicing</h1>
