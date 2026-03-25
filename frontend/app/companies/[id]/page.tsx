@@ -28,7 +28,6 @@ export default function EditCompanyPage() {
     phone: '',
     email: '',
     website: '',
-    logo: '',
     isActive: true,
   })
 
@@ -58,7 +57,6 @@ export default function EditCompanyPage() {
           phone: c.phone ?? '',
           email: c.email ?? '',
           website: c.website ?? '',
-          logo: c.logo ?? '',
           isActive: c.isActive !== false,
         })
       } catch (e: any) {
@@ -77,25 +75,6 @@ export default function EditCompanyPage() {
       ...formData,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     })
-  }
-
-  const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file')
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Logo must be 2MB or smaller')
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => {
-      setFormData((prev) => ({ ...prev, logo: reader.result as string }))
-      setError('')
-    }
-    reader.readAsDataURL(file)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,7 +117,6 @@ export default function EditCompanyPage() {
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
         website: formData.website.trim() || undefined,
-        logo: formData.logo || undefined,
         isActive: formData.isActive,
       }
 
@@ -433,27 +411,6 @@ export default function EditCompanyPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Additional Information</h2>
             
             <div className="space-y-6">
-              <div>
-                <label htmlFor="logoFile" className="block text-sm font-medium text-gray-700 mb-2">
-                  Company logo
-                </label>
-                <input
-                  type="file"
-                  id="logoFile"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  onChange={handleLogoFile}
-                  className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                <p className="mt-1 text-sm text-gray-500">PNG or JPG, max 2MB. Leave unchanged if you do not pick a new file.</p>
-                {formData.logo && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-1">Current logo</p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formData.logo} alt="Logo" className="h-20 w-auto max-w-full object-contain border border-gray-200 rounded" />
-                  </div>
-                )}
-              </div>
-
               <div className="flex items-center">
                 <input
                   type="checkbox"
