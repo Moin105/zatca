@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import api from '../lib/api'
+import AppLoader from '../components/AppLoader'
 
 interface CreditNote {
   id: string
@@ -36,7 +37,7 @@ export default function CreditNotesPage() {
     }
   }
 
-  if (loading) return <div className="p-8">Loading...</div>
+  if (loading) return <AppLoader />
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">

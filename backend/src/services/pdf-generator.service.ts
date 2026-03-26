@@ -174,12 +174,17 @@ export class PdfGeneratorService {
       const leftColX = pageLeft;
       const midColX = pageLeft + third;
       const rightColX = pageLeft + 2 * third;
-      const lineGap = 13;
-      let hy = headerTop;
+      const headerNameFont = 12;
+      const headerDetailFont = 11;
+      const lineGap = 15;
+      /** Slightly lower than logo so side text aligns with a larger header; logo sits visually higher */
+      const headerTextTop = headerTop + 4;
+      let hy = headerTextTop;
 
-      doc.fillColor('#000000').fontSize(10);
+      doc.fillColor('#000000').fontSize(headerNameFont);
       doc.text(company.name, leftColX, hy, { width: third - 4 });
       hy += lineGap;
+      doc.fontSize(headerDetailFont);
       doc.text(countryEn, leftColX, hy, { width: third - 4 });
       hy += lineGap;
       doc.text(`${LABELS.vat.en} ${company.vatNumber}`, leftColX, hy, { width: third - 4 });
@@ -190,16 +195,18 @@ export class PdfGeneratorService {
 
       const logoBuf = decodeLogoBuffer(company.logo);
       const logoSize = 72;
+      /** Move logo upward vs the text block */
+      const logoTop = headerTop - 6;
       const logoX = midColX + (third - logoSize) / 2;
       if (logoBuf) {
         try {
           const cx = logoX + logoSize / 2;
-          const cy = headerTop + logoSize / 2;
+          const cy = logoTop + logoSize / 2;
           doc.save();
           doc
             .circle(cx, cy, logoSize / 2)
             .clip();
-          doc.image(logoBuf, logoX, headerTop, { width: logoSize, height: logoSize });
+          doc.image(logoBuf, logoX, logoTop, { width: logoSize, height: logoSize });
           doc.restore();
           doc
             .circle(cx, cy, logoSize / 2)
@@ -217,10 +224,11 @@ export class PdfGeneratorService {
       }
 
       if (hasAmiri) {
-        let ay = headerTop;
-        doc.fontSize(10);
+        let ay = headerTextTop;
+        doc.fontSize(headerNameFont);
         doc.text(company.name, rightColX, ay, { width: third - 4, align: 'right' });
         ay += lineGap;
+        doc.fontSize(headerDetailFont);
         doc.text(countryAr, rightColX, ay, { width: third - 4, align: 'right' });
         ay += lineGap;
         doc.text(`${LABELS.vat.ar} ${company.vatNumber}`, rightColX, ay, { width: third - 4, align: 'right' });
@@ -230,7 +238,13 @@ export class PdfGeneratorService {
         }
       }
 
-      const headerBlockH = Math.max(logoSize + 4, lineGap * 4 + 8);
+      const leftTextBottom =
+        headerTextTop +
+        (company.commercialRegistration ? 3 : 2) * lineGap +
+        headerDetailFont +
+        6;
+      const logoBottom = logoTop + logoSize + 4;
+      const headerBlockH = Math.max(logoBottom - headerTop, leftTextBottom - headerTop, 8);
       let y = headerTop + headerBlockH + 8;
 
       // Divider line above the title (matches your sample)

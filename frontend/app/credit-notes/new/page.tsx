@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../lib/api'
+import AppLoader from '../../components/AppLoader'
 
 export default function NewCreditNotePage() {
   const router = useRouter()
@@ -76,7 +77,7 @@ export default function NewCreditNotePage() {
     }
   }
 
-  if (loading) return <div className="p-8">Loading...</div>
+  if (loading) return <AppLoader />
   if (!invoiceId || error && !invoice) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-8">

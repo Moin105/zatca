@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../lib/api'
+import AppLoader from '../../components/AppLoader'
 
 export default function CreditNoteDetailPage() {
   const params = useParams()
@@ -51,7 +52,7 @@ export default function CreditNoteDetailPage() {
     }
   }
 
-  if (loading || !note) return <div className="p-8">Loading...</div>
+  if (loading || !note) return <AppLoader />
 
   const isIssued = note.status === 'issued'
 

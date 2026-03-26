@@ -19,7 +19,6 @@ export class CompaniesService {
 
   async findAll(): Promise<Company[]> {
     return await this.companyRepository.find({
-      where: { isActive: true },
       order: { createdAt: 'DESC' },
     });
   }
