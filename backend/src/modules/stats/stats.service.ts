@@ -22,8 +22,9 @@ export class StatsService {
     invoiceCount: number;
   }> {
     const [companyCount, customerCount, invoiceCount] = await Promise.all([
-      this.companyRepository.count({ where: { isActive: true } }),
-      this.customerRepository.count({ where: { isActive: true } }),
+      // Dashboard should show total created records, not only active ones.
+      this.companyRepository.count(),
+      this.customerRepository.count(),
       this.invoiceRepository.count(),
     ]);
     return { companyCount, customerCount, invoiceCount };

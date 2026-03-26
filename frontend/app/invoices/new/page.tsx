@@ -9,6 +9,7 @@ interface Company {
   id: string
   name: string
   vatNumber: string
+  isActive?: boolean
 }
 
 interface Customer {
@@ -59,14 +60,18 @@ export default function NewInvoicePage() {
         api.get('/customers'),
       ])
 
-      setCompanies(companiesRes.data)
+      const activeCompanies = (companiesRes.data || []).filter(
+        (company: Company) => company.isActive !== false
+      )
+
+      setCompanies(activeCompanies)
       setCustomers(customersRes.data)
 
       // Auto-select first company and customer if available
-      if (companiesRes.data.length > 0) {
+      if (activeCompanies.length > 0) {
         setFormData((prev) => ({
           ...prev,
-          companyId: companiesRes.data[0].id,
+          companyId: activeCompanies[0].id,
         }))
       }
       if (customersRes.data.length > 0) {
@@ -204,7 +209,7 @@ export default function NewInvoicePage() {
 
         {companies.length === 0 && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg">
-            No companies found. Please create a company first.
+            No active companies found. Please create or activate a company first.
             <Link href="/companies" className="ml-2 underline">Create Company</Link>
           </div>
         )}
