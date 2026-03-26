@@ -77,8 +77,7 @@ export default function DashboardPage() {
                 <Image src={zatcaLogo} alt="ZATCA logo" width={105} height={105} className="object-contain" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">ZATCA E-Invoicing</h1>
-                <p className="text-xs text-gray-500">Phase 1 Compliant System</p>
+          
               </div>
             </div>
             <div className="flex items-center space-x-4">

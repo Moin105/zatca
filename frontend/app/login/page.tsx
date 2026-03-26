@@ -49,14 +49,14 @@ export default function LoginPage() {
         {/* Logo and Header */}
         <div className="text-center">
           <div className="mx-auto h-24 w-24 rounded-lg flex items-center justify-center">
-            <Image src={zatcaLogo} alt="ZATCA logo" width={105} height={105} className="object-contain" />
+            <Image src={zatcaLogo} alt="ZATCA logo" width={155} height={155} className="object-contain" />
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          {/* <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Clock Chair Company
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             E-Invoicing System
-          </p>
+          </p> */}
         </div>
 
         {/* Login Form */}
@@ -125,7 +125,7 @@ export default function LoginPage() {
 
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              Secure access to ZATCA Phase 1 compliant invoicing system
+              Secure access to Clock Chair Company E-Invoicing System
             </p>
           </div>
         </form>
@@ -133,7 +133,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-gray-400">
-            © 2024 ZATCA E-Invoicing System. All rights reserved.
+            © 2024 Clock Chair Company. All rights reserved.
           </p>
         </div>
       </div>
