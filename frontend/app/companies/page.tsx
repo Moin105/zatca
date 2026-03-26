@@ -16,11 +16,13 @@ interface Company {
   city: string
   email: string
   phone: string
+  isActive: boolean
 }
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchCompanies()
@@ -51,6 +53,18 @@ export default function CompaniesPage() {
       await fetchCompanies()
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to remove company')
+    }
+  }
+
+  const handleToggleStatus = async (company: Company) => {
+    setTogglingId(company.id)
+    try {
+      await api.patch(`/companies/${company.id}`, { isActive: !company.isActive })
+      await fetchCompanies()
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to update company status')
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -108,6 +122,22 @@ export default function CompaniesPage() {
               <div className="flex justify-between items-start gap-2 mb-2">
                 <h2 className="text-xl font-semibold">{company.name}</h2>
                 <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStatus(company)}
+                    disabled={togglingId === company.id}
+                    className={`text-xs px-2 py-1 rounded-full font-medium border ${
+                      company.isActive
+                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                    } disabled:opacity-50`}
+                  >
+                    {togglingId === company.id
+                      ? 'Updating...'
+                      : company.isActive
+                      ? 'Active'
+                      : 'Inactive'}
+                  </button>
                   <Link
                     href={`/companies/${company.id}`}
                     className="text-sm text-blue-600 hover:text-blue-800 font-medium"
