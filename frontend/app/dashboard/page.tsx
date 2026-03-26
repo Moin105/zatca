@@ -73,8 +73,8 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <div className="h-14 w-14 rounded-lg flex items-center justify-center">
-                <Image src={zatcaLogo} alt="ZATCA logo" width={45} height={45} className="object-contain" />
+              <div className="h-24 w-24 rounded-lg flex items-center justify-center">
+                <Image src={zatcaLogo} alt="ZATCA logo" width={105} height={105} className="object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">ZATCA E-Invoicing</h1>
