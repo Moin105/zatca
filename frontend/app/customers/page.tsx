@@ -7,6 +7,7 @@ import Image from 'next/image'
 import api from '../lib/api'
 import zatcaLogo from '../images/logo.png'
 import AppLoader from '../components/AppLoader'
+import AppModal from '../components/AppModal'
 
 interface Customer {
   id: string
@@ -22,6 +23,8 @@ interface Customer {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null)
+  const [modalError, setModalError] = useState('')
 
   useEffect(() => {
     fetchCustomers()
@@ -44,14 +47,18 @@ export default function CustomersPage() {
   }
 
   const handleDelete = async (customer: Customer) => {
-    if (!confirm(`Remove "${customer.name}" from the list? Invoices that use this customer are kept; you can add the customer again later.`)) {
-      return
-    }
+    setCustomerToDelete(customer)
+  }
+
+  const confirmDelete = async () => {
+    if (!customerToDelete) return
     try {
-      await api.delete(`/customers/${customer.id}`)
+      await api.delete(`/customers/${customerToDelete.id}`)
       await fetchCustomers()
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to remove customer')
+      setModalError(error.response?.data?.message || 'Failed to remove customer')
+    } finally {
+      setCustomerToDelete(null)
     }
   }
 
@@ -161,6 +168,28 @@ export default function CustomersPage() {
           </div>
         )}
       </main>
+
+      <AppModal
+        isOpen={!!customerToDelete}
+        title="Remove customer?"
+        message={
+          customerToDelete
+            ? `Remove "${customerToDelete.name}" from the list?\nInvoices that use this customer are kept; you can add the customer again later.`
+            : ''
+        }
+        onClose={() => setCustomerToDelete(null)}
+        onConfirm={confirmDelete}
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <AppModal
+        isOpen={!!modalError}
+        title="Something went wrong"
+        message={modalError}
+        onClose={() => setModalError('')}
+      />
     </div>
   )
 }

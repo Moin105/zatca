@@ -7,6 +7,7 @@ import Image from 'next/image'
 import api from '../lib/api'
 import zatcaLogo from '../images/logo.png'
 import AppLoader from '../components/AppLoader'
+import AppModal from '../components/AppModal'
 
 interface Invoice {
   id: string
@@ -24,6 +25,8 @@ export default function InvoicesPage() {
   const router = useRouter()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null)
+  const [modalError, setModalError] = useState('')
 
   useEffect(() => {
     fetchInvoices()
@@ -44,14 +47,18 @@ export default function InvoicesPage() {
   }
 
   const handleDelete = async (invoice: Invoice) => {
-    if (!confirm(`Delete invoice ${invoice.invoiceNumber}? This cannot be undone.`)) {
-      return
-    }
+    setInvoiceToDelete(invoice)
+  }
+
+  const confirmDelete = async () => {
+    if (!invoiceToDelete) return
     try {
-      await api.delete(`/invoices/${invoice.id}`)
+      await api.delete(`/invoices/${invoiceToDelete.id}`)
       await fetchInvoices()
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to delete invoice')
+      setModalError(error.response?.data?.message || 'Failed to delete invoice')
+    } finally {
+      setInvoiceToDelete(null)
     }
   }
 
@@ -190,6 +197,28 @@ export default function InvoicesPage() {
           )}
         </div>
       </main>
+
+      <AppModal
+        isOpen={!!invoiceToDelete}
+        title="Delete invoice?"
+        message={
+          invoiceToDelete
+            ? `Delete invoice ${invoiceToDelete.invoiceNumber}? This cannot be undone.`
+            : ''
+        }
+        onClose={() => setInvoiceToDelete(null)}
+        onConfirm={confirmDelete}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <AppModal
+        isOpen={!!modalError}
+        title="Something went wrong"
+        message={modalError}
+        onClose={() => setModalError('')}
+      />
     </div>
   )
 }

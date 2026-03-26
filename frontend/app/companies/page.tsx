@@ -7,6 +7,7 @@ import Image from 'next/image'
 import api from '../lib/api'
 import zatcaLogo from '../images/logo.png'
 import AppLoader from '../components/AppLoader'
+import AppModal from '../components/AppModal'
 
 interface Company {
   id: string
@@ -23,6 +24,8 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null)
+  const [modalError, setModalError] = useState('')
 
   useEffect(() => {
     fetchCompanies()
@@ -45,14 +48,18 @@ export default function CompaniesPage() {
   }
 
   const handleDelete = async (company: Company) => {
-    if (!confirm(`Remove "${company.name}" from the list? Invoices that use it are kept; you can add the company again later.`)) {
-      return
-    }
+    setCompanyToDelete(company)
+  }
+
+  const confirmDelete = async () => {
+    if (!companyToDelete) return
     try {
-      await api.delete(`/companies/${company.id}`)
+      await api.delete(`/companies/${companyToDelete.id}`)
       await fetchCompanies()
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to remove company')
+      setModalError(error.response?.data?.message || 'Failed to remove company')
+    } finally {
+      setCompanyToDelete(null)
     }
   }
 
@@ -62,7 +69,7 @@ export default function CompaniesPage() {
       await api.patch(`/companies/${company.id}`, { isActive: !company.isActive })
       await fetchCompanies()
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to update company status')
+      setModalError(error.response?.data?.message || 'Failed to update company status')
     } finally {
       setTogglingId(null)
     }
@@ -179,6 +186,28 @@ export default function CompaniesPage() {
           </div>
         )}
       </main>
+
+      <AppModal
+        isOpen={!!companyToDelete}
+        title="Remove company?"
+        message={
+          companyToDelete
+            ? `Remove "${companyToDelete.name}" from the list?\nInvoices that use it are kept; you can add the company again later.`
+            : ''
+        }
+        onClose={() => setCompanyToDelete(null)}
+        onConfirm={confirmDelete}
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <AppModal
+        isOpen={!!modalError}
+        title="Something went wrong"
+        message={modalError}
+        onClose={() => setModalError('')}
+      />
     </div>
   )
 }

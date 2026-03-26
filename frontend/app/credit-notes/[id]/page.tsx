@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../lib/api'
 import AppLoader from '../../components/AppLoader'
+import AppModal from '../../components/AppModal'
 
 export default function CreditNoteDetailPage() {
   const params = useParams()
@@ -13,6 +14,8 @@ export default function CreditNoteDetailPage() {
   const [note, setNote] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [issuing, setIssuing] = useState(false)
+  const [showIssueConfirm, setShowIssueConfirm] = useState(false)
+  const [modalError, setModalError] = useState('')
 
   useEffect(() => {
     api.get(`/credit-notes/${id}`)
@@ -22,14 +25,18 @@ export default function CreditNoteDetailPage() {
   }, [id])
 
   const handleIssue = async () => {
-    if (!confirm('Issue this credit note? It cannot be modified after issuing.')) return
+    setShowIssueConfirm(true)
+  }
+
+  const confirmIssue = async () => {
+    setShowIssueConfirm(false)
     setIssuing(true)
     try {
       await api.post(`/credit-notes/${id}/issue`)
       const res = await api.get(`/credit-notes/${id}`)
       setNote(res.data)
     } catch (e: any) {
-      alert(e.response?.data?.message || 'Failed to issue')
+      setModalError(e.response?.data?.message || 'Failed to issue')
     } finally {
       setIssuing(false)
     }
@@ -48,7 +55,7 @@ export default function CreditNoteDetailPage() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
-      alert(e.response?.data?.message || 'Failed to download PDF')
+      setModalError(e.response?.data?.message || 'Failed to download PDF')
     }
   }
 
@@ -97,6 +104,23 @@ export default function CreditNoteDetailPage() {
           </div>
         </div>
       </main>
+
+      <AppModal
+        isOpen={showIssueConfirm}
+        title="Issue credit note?"
+        message="Issue this credit note? It cannot be modified after issuing."
+        onClose={() => setShowIssueConfirm(false)}
+        onConfirm={confirmIssue}
+        confirmText="Issue"
+        cancelText="Cancel"
+      />
+
+      <AppModal
+        isOpen={!!modalError}
+        title="Something went wrong"
+        message={modalError}
+        onClose={() => setModalError('')}
+      />
     </div>
   )
 }

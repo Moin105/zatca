@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../lib/api'
+import AppModal from '../../components/AppModal'
 
 interface InvoiceItem {
   id: string
@@ -59,6 +60,8 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [issuing, setIssuing] = useState(false)
+  const [showIssueConfirm, setShowIssueConfirm] = useState(false)
+  const [modalError, setModalError] = useState('')
 
   useEffect(() => {
     if (invoiceId) {
@@ -84,17 +87,18 @@ export default function InvoiceDetailPage() {
   }
 
   const handleIssue = async () => {
-    if (!confirm('Are you sure you want to issue this invoice? Once issued, it cannot be modified.')) {
-      return
-    }
+    setShowIssueConfirm(true)
+  }
 
+  const confirmIssue = async () => {
+    setShowIssueConfirm(false)
     setIssuing(true)
     try {
       await api.put(`/invoices/${invoiceId}/issue`, {})
       // Refresh invoice data
       await fetchInvoice()
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to issue invoice')
+      setModalError(error.response?.data?.message || 'Failed to issue invoice')
     } finally {
       setIssuing(false)
     }
@@ -113,7 +117,7 @@ export default function InvoiceDetailPage() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
-      alert(e.response?.data?.message || 'Failed to download PDF')
+      setModalError(e.response?.data?.message || 'Failed to download PDF')
     }
   }
 
@@ -346,6 +350,23 @@ export default function InvoiceDetailPage() {
           </div>
         )}
       </main>
+
+      <AppModal
+        isOpen={showIssueConfirm}
+        title="Issue invoice?"
+        message="Are you sure you want to issue this invoice? Once issued, it cannot be modified."
+        onClose={() => setShowIssueConfirm(false)}
+        onConfirm={confirmIssue}
+        confirmText="Issue invoice"
+        cancelText="Cancel"
+      />
+
+      <AppModal
+        isOpen={!!modalError}
+        title="Something went wrong"
+        message={modalError}
+        onClose={() => setModalError('')}
+      />
     </div>
   )
 }
