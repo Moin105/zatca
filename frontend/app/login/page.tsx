@@ -52,13 +52,10 @@ export default function LoginPage() {
             <Image src={zatcaLogo} alt="ZATCA logo" width={105} height={105} className="object-contain" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            ZATCA E-Invoicing
+            Clock Chair Company
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Phase 1 Compliant Electronic Invoicing System
-          </p>
-          <p className="mt-1 text-xs text-gray-500">
-            Kingdom of Saudi Arabia
+            E-Invoicing System
           </p>
         </div>
 

@@ -6,8 +6,8 @@ import DevToolsBlocker from './components/DevToolsBlocker'
 import AuthGuard from './components/AuthGuard'
 
 export const metadata: Metadata = {
-  title: 'ZATCA E-Invoicing System',
-  description: 'ZATCA Phase 1 E-Invoicing Platform',
+  title: 'Clock Chair Company',
+  description: 'E-Invoicing System',
 }
 
 export default function RootLayout({
