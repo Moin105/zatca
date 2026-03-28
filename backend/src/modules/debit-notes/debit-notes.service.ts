@@ -13,7 +13,7 @@ import { QrCodeService } from '../../services/qr-code.service';
 import { HashChainService } from '../../services/hash-chain.service';
 import { InvoiceSequenceService } from '../../services/invoice-sequence.service';
 import { XmlGeneratorService } from '../../services/xml-generator.service';
-import { PdfGeneratorService } from '../../services/pdf-generator.service';
+import { PuppeteerPdfService } from '../../services/puppeteer-pdf.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { AuditAction } from '../../entities/audit-log.entity';
 import * as path from 'path';
@@ -33,7 +33,7 @@ export class DebitNotesService {
     private hashChainService: HashChainService,
     private invoiceSequenceService: InvoiceSequenceService,
     private xmlGeneratorService: XmlGeneratorService,
-    private pdfGeneratorService: PdfGeneratorService,
+    private pdfService: PuppeteerPdfService,
     private auditLogsService: AuditLogsService,
     private configService: ConfigService,
   ) {}
@@ -153,38 +153,61 @@ export class DebitNotesService {
     note.previousHash = previousHash;
     note.currentHash = currentHash;
 
+    // Generate QR for both B2B and B2C so PDF rendering includes it.
     note.qrCode = null;
     note.qrCodeData = null;
-    if (customer.type === 'B2C') {
-      try {
-        const qr = await this.qrCodeService.generateInvoiceQRCode(
-          company.name,
-          company.vatNumber,
-          note.issueDateTime,
-          Number(note.totalAmount),
-          Number(note.vatAmount),
-        );
-        note.qrCode = qr.image;
-        note.qrCodeData = qr.tlvData;
-      } catch (e) {
-        console.error('Debit note QR error:', e);
-      }
+    try {
+      const qr = await this.qrCodeService.generateInvoiceQRCode(
+        company.name,
+        company.vatNumber,
+        note.issueDateTime,
+        Number(note.totalAmount),
+        Number(note.vatAmount),
+      );
+      note.qrCode = qr.image;
+      note.qrCodeData = qr.tlvData;
+    } catch (e) {
+      console.error('Debit note QR error:', e);
     }
 
     const xmlContent = this.xmlGeneratorService.generateUBLDebitNote(note, company, customer);
     note.xmlContent = xmlContent;
 
     const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
-    const xmlPath = path.join(storagePath, 'xml', `${note.noteNumber}.xml`);
+    const xmlPath = path.join(
+      storagePath,
+      'xml',
+      `${note.companyId}-${note.noteNumber}.xml`,
+    );
     const xmlDir = path.dirname(xmlPath);
     if (!fs.existsSync(xmlDir)) fs.mkdirSync(xmlDir, { recursive: true });
     fs.writeFileSync(xmlPath, xmlContent, 'utf-8');
     note.xmlPath = xmlPath;
 
-    const pdfPath = path.join(storagePath, 'pdf', `${note.noteNumber}.pdf`);
+    const pdfPath = path.join(
+      storagePath,
+      'pdf',
+      `${note.companyId}-${note.noteNumber}.pdf`,
+    );
     const pdfDir = path.dirname(pdfPath);
     if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
-    await this.pdfGeneratorService.generateDebitNotePDF(note, company, customer, pdfPath);
+    const fakeInvoice: any = {
+      invoiceNumber: note.noteNumber,
+      issueDateTime: note.issueDateTime,
+      subtotal: note.subtotal,
+      vatAmount: note.vatAmount,
+      totalAmount: note.totalAmount,
+      items: note.items,
+      qrCode: note.qrCode,
+    };
+    const { buffer } = await this.pdfService.generateInvoicePdf({
+      invoice: fakeInvoice,
+      company,
+      customer,
+      titleEn: 'Debit Note',
+      titleAr: 'إشعار مدين',
+    });
+    await this.pdfService.writePdfToPath(buffer, pdfPath);
     note.pdfPath = pdfPath;
 
     await this.debitNoteRepository.update(id, {
@@ -219,7 +242,10 @@ export class DebitNotesService {
     }
     const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
     const allowedDir = path.resolve(storagePath, 'pdf');
-    const expectedPath = path.resolve(allowedDir, `${note.noteNumber}.pdf`);
+    const expectedPath = path.resolve(
+      allowedDir,
+      `${note.companyId}-${note.noteNumber}.pdf`,
+    );
     const resolvedPath = note.pdfPath ? path.resolve(note.pdfPath) : expectedPath;
     if (!resolvedPath.startsWith(allowedDir + path.sep)) {
       throw new BadRequestException('Invalid PDF path');
@@ -229,12 +255,23 @@ export class DebitNotesService {
     if (!note.pdfPath || !fs.existsSync(resolvedPath)) {
       const dir = path.dirname(expectedPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      await this.pdfGeneratorService.generateDebitNotePDF(
-        note,
-        note.company,
-        note.customer,
-        expectedPath,
-      );
+      const fakeInvoice: any = {
+        invoiceNumber: note.noteNumber,
+        issueDateTime: note.issueDateTime,
+        subtotal: note.subtotal,
+        vatAmount: note.vatAmount,
+        totalAmount: note.totalAmount,
+        items: note.items,
+        qrCode: note.qrCode,
+      };
+      const { buffer } = await this.pdfService.generateInvoicePdf({
+        invoice: fakeInvoice,
+        company: note.company,
+        customer: note.customer,
+        titleEn: 'Debit Note',
+        titleAr: 'إشعار مدين',
+      });
+      await this.pdfService.writePdfToPath(buffer, expectedPath);
       await this.debitNoteRepository.update(id, { pdfPath: expectedPath });
       if (!fs.existsSync(expectedPath)) {
         throw new NotFoundException('PDF file not found on disk');
