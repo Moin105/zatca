@@ -2,6 +2,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  Index,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
@@ -19,30 +20,42 @@ export enum InvoiceStatus {
   CANCELLED = 'cancelled',
 }
 
+@Index('UQ_invoices_companyId_invoiceNumber', ['companyId', 'invoiceNumber'], { unique: true })
 @Entity('invoices')
 export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   invoiceNumber: string;
 
   @Column({ type: 'timestamp' })
   issueDateTime: Date;
 
-  @Column({ type: 'uuid' })
-  companyId: string;
+  @Column({ type: 'uuid', nullable: true })
+  companyId: string | null;
 
-  @ManyToOne(() => Company)
+  @ManyToOne(() => Company, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'companyId' })
-  company: Company;
+  company: Company | null;
 
-  @Column({ type: 'uuid' })
-  customerId: string;
+  @Column({ type: 'uuid', nullable: true })
+  customerId: string | null;
 
-  @ManyToOne(() => Customer)
+  @ManyToOne(() => Customer, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'customerId' })
-  customer: Customer;
+  customer: Customer | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  orderNumber: string;
+
+  // Immutable company snapshot kept for historical invoice integrity.
+  @Column({ type: 'jsonb', nullable: true })
+  companySnapshot: Record<string, any> | null;
+
+  // Immutable customer snapshot kept for historical invoice integrity.
+  @Column({ type: 'jsonb', nullable: true })
+  customerSnapshot: Record<string, any> | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   subtotal: number;

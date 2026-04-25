@@ -19,12 +19,13 @@ import { QrCodeService } from '../../services/qr-code.service';
 import { HashChainService } from '../../services/hash-chain.service';
 import { InvoiceSequenceService } from '../../services/invoice-sequence.service';
 import { XmlGeneratorService } from '../../services/xml-generator.service';
-import { PdfGeneratorService } from '../../services/pdf-generator.service';
+import { PuppeteerPdfService } from '../../services/puppeteer-pdf.service';
 import { ZatcaSdkService, ZatcaValidationResult } from '../../services/zatca-sdk.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { AuditAction } from '../../entities/audit-log.entity';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class InvoicesService {
@@ -42,11 +43,67 @@ export class InvoicesService {
     private hashChainService: HashChainService,
     private invoiceSequenceService: InvoiceSequenceService,
     private xmlGeneratorService: XmlGeneratorService,
-    private pdfGeneratorService: PdfGeneratorService,
+    private pdfService: PuppeteerPdfService,
     private zatcaSdkService: ZatcaSdkService,
     private auditLogsService: AuditLogsService,
     private configService: ConfigService,
   ) {}
+
+  private buildCompanySnapshot(company: Company): Record<string, any> {
+    return {
+      id: company.id,
+      name: company.name,
+      vatNumber: company.vatNumber,
+      commercialRegistration: company.commercialRegistration ?? null,
+      address: company.address ?? null,
+      streetName: company.streetName ?? null,
+      buildingNumber: company.buildingNumber ?? null,
+      plotIdentification: company.plotIdentification ?? null,
+      citySubdivisionName: company.citySubdivisionName ?? null,
+      city: company.city ?? null,
+      postalCode: company.postalCode ?? null,
+      country: company.country ?? null,
+      phone: company.phone ?? null,
+      email: company.email ?? null,
+      website: company.website ?? null,
+      logo: company.logo ?? null,
+      isActive: company.isActive,
+    };
+  }
+
+  private buildCustomerSnapshot(customer: Customer): Record<string, any> {
+    return {
+      id: customer.id,
+      name: customer.name,
+      vatNumber: customer.vatNumber ?? null,
+      address: customer.address ?? null,
+      streetName: customer.streetName ?? null,
+      buildingNumber: customer.buildingNumber ?? null,
+      plotIdentification: customer.plotIdentification ?? null,
+      citySubdivisionName: customer.citySubdivisionName ?? null,
+      city: customer.city ?? null,
+      postalCode: customer.postalCode ?? null,
+      country: customer.country ?? null,
+      phone: customer.phone ?? null,
+      email: customer.email ?? null,
+      type: (customer as any).type ?? null,
+      isActive: customer.isActive,
+    };
+  }
+
+  private hydrateCompanyFromSnapshot(invoice: Invoice): Invoice {
+    if (!invoice.company && invoice.companySnapshot) {
+      (invoice as any).company = invoice.companySnapshot as any;
+    }
+    return invoice;
+  }
+
+  private hydrateCustomerFromSnapshot(invoice: Invoice): Invoice {
+    if (!invoice.customer && invoice.customerSnapshot) {
+      (invoice as any).customer = invoice.customerSnapshot as any;
+    }
+    return invoice;
+  }
 
   async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
     // Validate company and customer exist
@@ -86,6 +143,13 @@ export class InvoicesService {
     const vatAmount = items.reduce((sum, item) => sum + item.vatAmount, 0);
     const totalAmount = subtotal + vatAmount;
 
+    const issueDate = createInvoiceDto.issueDateTime
+      ? new Date(createInvoiceDto.issueDateTime)
+      : new Date();
+    const dateKey = issueDate.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+    const generatedOrderNumber = `ORD-${dateKey}-${suffix}`;
+
     // ZATCA Phase 1: sequential per-company invoice number
     const invoiceNumber =
       createInvoiceDto.invoiceNumber ||
@@ -94,9 +158,13 @@ export class InvoicesService {
     // Create invoice
     const invoice = this.invoiceRepository.create({
       invoiceNumber,
-      issueDateTime: createInvoiceDto.issueDateTime || new Date(),
+      issueDateTime: issueDate,
       companyId: createInvoiceDto.companyId,
       customerId: createInvoiceDto.customerId,
+      // Always generate unique order number on backend (frontend should not control this).
+      orderNumber: generatedOrderNumber,
+      companySnapshot: this.buildCompanySnapshot(company),
+      customerSnapshot: this.buildCustomerSnapshot(customer),
       subtotal,
       vatAmount,
       totalAmount,
@@ -118,10 +186,13 @@ export class InvoicesService {
   }
 
   async findAll(): Promise<Invoice[]> {
-    return await this.invoiceRepository.find({
+    const invoices = await this.invoiceRepository.find({
       relations: ['company', 'customer', 'items'],
       order: { createdAt: 'DESC' },
     });
+    return invoices
+      .map((invoice) => this.hydrateCompanyFromSnapshot(invoice))
+      .map((invoice) => this.hydrateCustomerFromSnapshot(invoice));
   }
 
   async findOne(id: string): Promise<Invoice> {
@@ -132,7 +203,7 @@ export class InvoicesService {
     if (!invoice) {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
-    return invoice;
+    return this.hydrateCustomerFromSnapshot(this.hydrateCompanyFromSnapshot(invoice));
   }
 
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
@@ -233,16 +304,16 @@ export class InvoicesService {
         throw new BadRequestException('Invoice is immutable');
       }
 
-      if (!invoice.company) {
+      if (!invoice.company && !invoice.companySnapshot) {
         throw new BadRequestException('Company information is missing');
       }
 
-      if (!invoice.customer) {
+      if (!invoice.customer && !invoice.customerSnapshot) {
         throw new BadRequestException('Customer information is missing');
       }
 
-      const company = invoice.company;
-      const customer = invoice.customer;
+      const company = (invoice.company ?? (invoice.companySnapshot as any)) as Company;
+      const customer = (invoice.customer ?? (invoice.customerSnapshot as any)) as Customer;
 
       // Get previous hash for chaining (includes invoices and notes)
       const previousHash = await this.hashChainService.getPreviousDocumentHash(
@@ -258,23 +329,22 @@ export class InvoicesService {
       invoice.previousHash = previousHash;
       invoice.currentHash = currentHash;
 
-      // QR only for simplified (B2C) invoices; clear for B2B
+      // Generate QR for both B2B and B2C.
+      // (Existing qrCodeService produces TLV QR data; we persist it so the PDF can render it.)
       invoice.qrCode = null;
       invoice.qrCodeData = null;
-      if (customer.type === 'B2C') {
-        try {
-          const qrCode = await this.qrCodeService.generateInvoiceQRCode(
-            company.name,
-            company.vatNumber,
-            invoice.issueDateTime,
-            invoice.totalAmount,
-            invoice.vatAmount,
-          );
-          invoice.qrCode = qrCode.image;
-          invoice.qrCodeData = qrCode.tlvData;
-        } catch (error) {
-          console.error('Error generating QR code:', error);
-        }
+      try {
+        const qrCode = await this.qrCodeService.generateInvoiceQRCode(
+          company.name,
+          company.vatNumber,
+          invoice.issueDateTime,
+          invoice.totalAmount,
+          invoice.vatAmount,
+        );
+        invoice.qrCode = qrCode.image;
+        invoice.qrCodeData = qrCode.tlvData;
+      } catch (error) {
+        console.error('Error generating QR code:', error);
       }
 
       // ZATCA Phase 1: ProfileID 01 = standard (B2B), 02 = simplified (B2C)
@@ -297,7 +367,7 @@ export class InvoicesService {
         const xmlPath = path.join(
           storagePath,
           'xml',
-          `${invoice.invoiceNumber}.xml`,
+          `${invoice.companyId}-${invoice.invoiceNumber}.xml`,
         );
         const xmlDir = path.dirname(xmlPath);
         if (!fs.existsSync(xmlDir)) {
@@ -324,19 +394,23 @@ export class InvoicesService {
         const pdfPath = path.join(
           storagePath,
           'pdf',
-          `${invoice.invoiceNumber}.pdf`,
+          `${invoice.companyId}-${invoice.invoiceNumber}.pdf`,
         );
         const pdfDir = path.dirname(pdfPath);
         if (!fs.existsSync(pdfDir)) {
           fs.mkdirSync(pdfDir, { recursive: true });
         }
-        await this.pdfGeneratorService.generateInvoicePDF(
+        const isSimplified = customer.type === 'B2C';
+        const titleEn = isSimplified ? 'Simplified Tax Invoice' : 'Tax Invoice';
+        const titleAr = isSimplified ? 'فاتورة ضريبية مبسطة' : 'فاتورة ضريبية';
+        const { buffer } = await this.pdfService.generateInvoicePdf({
           invoice,
           company,
           customer,
-          pdfPath,
-          documentTypeLabel,
-        );
+          titleEn,
+          titleAr,
+        });
+        await this.pdfService.writePdfToPath(buffer, pdfPath);
         invoice.pdfPath = pdfPath;
       } catch (error) {
         console.error('Error generating PDF:', error);
@@ -351,7 +425,6 @@ export class InvoicesService {
         currentHash: currentHash,
       };
 
-      // B2B: persist null QR; B2C: persist generated QR
       updateData.qrCode = invoice.qrCode;
       updateData.qrCodeData = invoice.qrCodeData;
 
@@ -433,7 +506,11 @@ export class InvoicesService {
     }
     let xmlPath = invoice.xmlPath;
     const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
-    const expectedXmlPath = path.join(storagePath, 'xml', `${invoice.invoiceNumber}.xml`);
+    const expectedXmlPath = path.join(
+      storagePath,
+      'xml',
+      `${invoice.companyId}-${invoice.invoiceNumber}.xml`,
+    );
 
     if (!invoice.xmlContent) {
       throw new BadRequestException(
@@ -462,7 +539,10 @@ export class InvoicesService {
 
     const storagePath = this.configService.get<string>('STORAGE_PATH', './storage');
     const allowedDir = path.resolve(storagePath, 'pdf');
-    const expectedPath = path.resolve(allowedDir, `${invoice.invoiceNumber}.pdf`);
+    const expectedPath = path.resolve(
+      allowedDir,
+      `${invoice.companyId}-${invoice.invoiceNumber}.pdf`,
+    );
     const resolvedPath = invoice.pdfPath ? path.resolve(invoice.pdfPath) : expectedPath;
     if (!resolvedPath.startsWith(allowedDir + path.sep)) {
       throw new BadRequestException('Invalid PDF path');
@@ -474,15 +554,25 @@ export class InvoicesService {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      const documentTypeLabel =
-        invoice.customer?.type === 'B2C' ? 'Simplified Tax Invoice' : 'Tax Invoice';
-      await this.pdfGeneratorService.generateInvoicePDF(
-        invoice,
-        invoice.company,
-        invoice.customer,
-        expectedPath,
-        documentTypeLabel,
-      );
+        const customerForPdf = (invoice.customer ?? (invoice.customerSnapshot as any)) as Customer;
+        if (!customerForPdf) {
+          throw new BadRequestException('Customer information is missing for PDF generation');
+        }
+        const isSimplified = customerForPdf?.type === 'B2C';
+        const titleEn = isSimplified ? 'Simplified Tax Invoice' : 'Tax Invoice';
+        const titleAr = isSimplified ? 'فاتورة ضريبية مبسطة' : 'فاتورة ضريبية';
+        const companyForPdf = (invoice.company ?? (invoice.companySnapshot as any)) as Company;
+        if (!companyForPdf) {
+          throw new BadRequestException('Company information is missing for PDF generation');
+        }
+        const { buffer } = await this.pdfService.generateInvoicePdf({
+          invoice,
+          company: companyForPdf,
+          customer: customerForPdf,
+          titleEn,
+          titleAr,
+        });
+        await this.pdfService.writePdfToPath(buffer, expectedPath);
       await this.invoiceRepository.update(id, { pdfPath: expectedPath });
       if (!fs.existsSync(expectedPath)) {
         throw new NotFoundException('PDF file not found on disk');

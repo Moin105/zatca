@@ -2,6 +2,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  Index,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
@@ -20,30 +21,31 @@ export enum CreditNoteStatus {
   CANCELLED = 'cancelled',
 }
 
+@Index('UQ_credit_notes_companyId_noteNumber', ['companyId', 'noteNumber'], { unique: true })
 @Entity('credit_notes')
 export class CreditNote {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   noteNumber: string;
 
   @Column({ type: 'timestamp' })
   issueDateTime: Date;
 
-  @Column({ type: 'uuid' })
-  companyId: string;
+  @Column({ type: 'uuid', nullable: true })
+  companyId: string | null;
 
-  @ManyToOne(() => Company)
+  @ManyToOne(() => Company, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'companyId' })
-  company: Company;
+  company: Company | null;
 
-  @Column({ type: 'uuid' })
-  customerId: string;
+  @Column({ type: 'uuid', nullable: true })
+  customerId: string | null;
 
-  @ManyToOne(() => Customer)
+  @ManyToOne(() => Customer, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'customerId' })
-  customer: Customer;
+  customer: Customer | null;
 
   @Column({ type: 'uuid' })
   originalInvoiceId: string;
