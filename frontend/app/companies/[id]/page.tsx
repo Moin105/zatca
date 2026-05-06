@@ -28,6 +28,7 @@ export default function EditCompanyPage() {
     phone: '',
     email: '',
     website: '',
+    logo: null as File | null,
     isActive: true,
   })
 
@@ -57,6 +58,7 @@ export default function EditCompanyPage() {
           phone: c.phone ?? '',
           email: c.email ?? '',
           website: c.website ?? '',
+          logo: null,
           isActive: c.isActive !== false,
         })
       } catch (e: any) {
@@ -74,6 +76,40 @@ export default function EditCompanyPage() {
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+    })
+  }
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Logo file size must be less than 5MB')
+        return
+      }
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload a valid image file')
+        return
+      }
+      setFormData({
+        ...formData,
+        logo: file,
+      })
+      setError('')
+    }
+  }
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => {
+        const result = reader.result as string
+        const base64String = result.split(',')[1]
+        resolve(base64String)
+      }
+      reader.onerror = reject
     })
   }
 
@@ -102,6 +138,7 @@ export default function EditCompanyPage() {
     }
 
     try {
+      // Send company data as JSON (without logo first)
       const payload = {
         name: formData.name.trim(),
         vatNumber: formData.vatNumber.trim(),
@@ -121,6 +158,22 @@ export default function EditCompanyPage() {
       }
 
       await api.patch(`/companies/${id}`, payload)
+
+      // Upload logo if present
+      if (formData.logo && id) {
+        try {
+          const base64Logo = await fileToBase64(formData.logo)
+          await api.patch(`/upload/logo/${id}`, {
+            logo: base64Logo,
+          })
+        } catch (logoError: any) {
+          console.error('Logo upload failed:', logoError)
+          // Logo upload failure is not critical, company is already updated
+        }
+      }
+
+      router.push(`/companies`)
+      router.push(`/companies`)
       router.push(`/companies`)
     } catch (error: any) {
       setError(
@@ -273,6 +326,33 @@ export default function EditCompanyPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="https://www.example.com"
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <label htmlFor="logo" className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Logo
+                </label>
+                <div className="flex items-center justify-center w-full">
+                  <label htmlFor="logo" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <svg className="w-8 h-8 mb-2 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 5.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.068 5 5 5a4 4 0 0 0 0 8h2.167M10 19V6m0 0L8 8m2-2 2 2"/>
+                      </svg>
+                      <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                      {formData.logo && (
+                        <p className="text-xs text-green-600 font-semibold mt-2">{formData.logo.name}</p>
+                      )}
+                    </div>
+                    <input 
+                      id="logo" 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleLogoChange}
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
