@@ -358,7 +358,7 @@ export default function NewInvoicePage() {
                       <input
                         type="number"
                         required
-                        min="0"
+                        // min="0"
                         step="0.01"
                         value={item.unitPrice}
                         onChange={(e) => handleItemChange(index, 'unitPrice', Number(e.target.value))}
