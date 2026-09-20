@@ -4,6 +4,23 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
+function buildCorsOrigins(): string[] {
+  const fromEnv = [
+    ...(process.env.FRONTEND_URLS || '').split(','),
+    ...(process.env.FRONTEND_URL || '').split(','),
+  ]
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const defaults = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://portal.clockchair.com',
+  ];
+
+  return Array.from(new Set([...defaults, ...fromEnv]));
+}
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,
@@ -11,34 +28,14 @@ async function bootstrap() {
   app.use(json({ limit: '5mb' }));
   app.use(urlencoded({ extended: true, limit: '5mb' }));
 
-  // Enable CORS for one or more frontend domains.
-  // Use FRONTEND_URLS as comma-separated origins in production.
-  const allowedOrigins = (
-    process.env.FRONTEND_URLS ||
-    process.env.FRONTEND_URL ||
-    'http://localhost:3000'
-  )
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const allowedOrigins = buildCorsOrigins();
 
+  // Allow portal.clockchair.com + localhost by default; extend via FRONTEND_URL(S).
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow non-browser tools or same-origin requests with no Origin header
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
-    },
+    origin: allowedOrigins,
     credentials: true,
   });
 
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -50,6 +47,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`🚀 Backend server running on http://localhost:${port}`);
+  console.log(`CORS origins: ${allowedOrigins.join(', ')}`);
 }
 
 bootstrap();
