@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Trigger Railway frontend redeploy
 const nextConfig = {
   reactStrictMode: true,
   env: {
