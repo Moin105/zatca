@@ -210,19 +210,23 @@ export function renderZatcaInvoiceHtml(input: InvoicePdfTemplateInput): string {
         line-height: 1.35;
       }
       .header .block.right { text-align: right; direction: rtl; }
-      /* Top-align logo with first line of left/right text (same row start) */
+      /* Center logo; keep full image visible (no negative margin — that clipped the top) */
       .header .block.center {
         display: flex;
         justify-content: center;
         align-items: flex-start;
         align-self: start;
-        margin: -16px 0 0;
+        margin: 0;
         padding: 0;
+        overflow: visible;
       }
       .logo {
         width: 130px;
         height: 130px;
+        max-width: 130px;
+        max-height: 130px;
         object-fit: contain;
+        object-position: center top;
         display: block;
         margin: 0;
         padding: 0;

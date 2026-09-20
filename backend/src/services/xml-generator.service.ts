@@ -202,12 +202,15 @@ export class XmlGeneratorService {
       customerTax.ele('cac:TaxScheme').ele('cbc:ID').txt('VAT');
     }
 
-    // Invoice Lines
+    // Invoice Lines (coerce decimals — TypeORM may return numeric columns as strings)
     doc.items.forEach((item, index) => {
+      const quantity = Number(item.quantity);
+      const unitPrice = Number(item.unitPrice);
+      const vatAmount = Number(item.vatAmount);
       const line = root.ele('cac:InvoiceLine');
       line.ele('cbc:ID').txt((index + 1).toString());
-      const lineExtension = item.quantity * item.unitPrice;
-      line.ele('cbc:InvoicedQuantity', { unitCode: 'C62' }).txt(item.quantity.toString());
+      const lineExtension = quantity * unitPrice;
+      line.ele('cbc:InvoicedQuantity', { unitCode: 'C62' }).txt(String(quantity));
       line.ele('cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(lineExtension.toFixed(2));
 
       const itemEl = line.ele('cac:Item');
@@ -217,10 +220,10 @@ export class XmlGeneratorService {
       }
 
       const price = line.ele('cac:Price');
-      price.ele('cbc:PriceAmount', { currencyID: 'SAR' }).txt(item.unitPrice.toFixed(2));
+      price.ele('cbc:PriceAmount', { currencyID: 'SAR' }).txt(unitPrice.toFixed(2));
 
       const taxTotal = line.ele('cac:TaxTotal');
-      taxTotal.ele('cbc:TaxAmount', { currencyID: 'SAR' }).txt(item.vatAmount.toFixed(2));
+      taxTotal.ele('cbc:TaxAmount', { currencyID: 'SAR' }).txt(vatAmount.toFixed(2));
       const taxCat = taxTotal.ele('cac:TaxSubtotal').ele('cac:TaxCategory');
       taxCat.ele('cbc:ID').txt('S');
       taxCat.ele('cbc:Percent').txt(String(item.vatRate));
@@ -228,13 +231,13 @@ export class XmlGeneratorService {
     });
 
     const legalMonetaryTotal = root.ele('cac:LegalMonetaryTotal');
-    legalMonetaryTotal.ele('cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(doc.subtotal.toFixed(2));
-    legalMonetaryTotal.ele('cbc:TaxExclusiveAmount', { currencyID: 'SAR' }).txt(doc.subtotal.toFixed(2));
-    legalMonetaryTotal.ele('cbc:TaxInclusiveAmount', { currencyID: 'SAR' }).txt(doc.totalAmount.toFixed(2));
-    legalMonetaryTotal.ele('cbc:PayableAmount', { currencyID: 'SAR' }).txt(doc.totalAmount.toFixed(2));
+    legalMonetaryTotal.ele('cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(Number(doc.subtotal).toFixed(2));
+    legalMonetaryTotal.ele('cbc:TaxExclusiveAmount', { currencyID: 'SAR' }).txt(Number(doc.subtotal).toFixed(2));
+    legalMonetaryTotal.ele('cbc:TaxInclusiveAmount', { currencyID: 'SAR' }).txt(Number(doc.totalAmount).toFixed(2));
+    legalMonetaryTotal.ele('cbc:PayableAmount', { currencyID: 'SAR' }).txt(Number(doc.totalAmount).toFixed(2));
 
     const taxTotal = root.ele('cac:TaxTotal');
-    taxTotal.ele('cbc:TaxAmount', { currencyID: 'SAR' }).txt(doc.vatAmount.toFixed(2));
+    taxTotal.ele('cbc:TaxAmount', { currencyID: 'SAR' }).txt(Number(doc.vatAmount).toFixed(2));
     const taxCat = taxTotal.ele('cac:TaxSubtotal').ele('cac:TaxCategory');
     taxCat.ele('cbc:ID').txt('S');
     taxCat.ele('cbc:Percent').txt('15');
