@@ -15,6 +15,7 @@ export default function EditCompanyPage() {
 
   const [formData, setFormData] = useState({
     name: '',
+    nameAr: '',
     vatNumber: '',
     commercialRegistration: '',
     address: '',
@@ -45,6 +46,7 @@ export default function EditCompanyPage() {
         const c = r.data
         setFormData({
           name: c.name ?? '',
+          nameAr: c.nameAr ?? '',
           vatNumber: c.vatNumber ?? '',
           commercialRegistration: c.commercialRegistration ?? '',
           address: c.address ?? '',
@@ -141,6 +143,7 @@ export default function EditCompanyPage() {
       // Send company data as JSON (without logo first)
       const payload = {
         name: formData.name.trim(),
+        nameAr: formData.nameAr.trim() || null,
         vatNumber: formData.vatNumber.trim(),
         commercialRegistration: formData.commercialRegistration.trim() || undefined,
         address: formData.address.trim() || undefined,
@@ -230,7 +233,7 @@ export default function EditCompanyPage() {
             <div className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name <span className="text-red-500">*</span>
+                  Company Name (English) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -240,8 +243,27 @@ export default function EditCompanyPage() {
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter company name"
+                  placeholder="Enter company name in English"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="nameAr" className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name (Arabic) <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  id="nameAr"
+                  name="nameAr"
+                  dir="rtl"
+                  value={formData.nameAr}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="أدخل اسم الشركة بالعربية"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  If entered, shown on the right side of invoice PDFs (left side stays English)
+                </p>
               </div>
 
               <div>

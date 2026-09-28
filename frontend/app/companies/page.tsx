@@ -171,7 +171,12 @@ export default function CompaniesPage() {
                 <p className="text-gray-600 mb-1">{company.email}</p>
               )}
               {company.phone && (
-                <p className="text-gray-600">{company.phone}</p>
+                <p className="text-gray-600 mb-3">{company.phone}</p>
+              )}
+              {(company as any).nameAr && (
+                <p className="text-gray-700 mb-1" dir="rtl">
+                  {(company as any).nameAr}
+                </p>
               )}
             </div>
           ))}
